@@ -103,32 +103,23 @@ class TicTacToe:
             return value
 
     def best_move(self, board, max_player):
-        row, col = [0, 0]
-
         if self.isTerminal(board):
-            return self.utility(board)
+            return None, None
+
+        row, col = 0, 0
         if max_player:
             best_score = float('-inf')
             for i, j in self.action(board):
-                score = self.minimax(self.result(board, (i, j)), max_player=True)
+                score = self.minimax(self.result(board, (i, j)), max_player=False)
                 if score > best_score:
                     best_score = score
                     row, col = i, j
-            return row,col
+            return row, col
         else:
             best_score = float('inf')
             for i, j in self.action(board):
-                score = self.minimax(self.result(board, (i, j)), max_player=False)
+                score = self.minimax(self.result(board, (i, j)), max_player=True)
                 if score < best_score:
                     best_score = score
                     row, col = i, j
             return row, col
-
-
-board = [['X', 'O', 'X'],
-         ['O', 'X', '_'],
-         ['_', 'O', '_']
-         ]
-
-game = TicTacToe(board)
-print(game.best_move(board, max_player=True))

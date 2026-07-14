@@ -63,10 +63,40 @@ def color_cell(btn, value):
         btn.configure(style="O.TButton")
 
 
+def reset_game():
+    global board, buttons, game
+    for widget in game_frame.winfo_children():
+        widget.destroy()
+    for widget in result_frame.winfo_children():
+        widget.destroy()
+    for widget in choose_frame.winfo_children():
+        widget.destroy()
+    result_frame.pack_forget()
+    choose_frame.pack_forget()
+    buttons = []
+    board = [['_', '_', '_'],
+             ['_', '_', '_'],
+             ['_', '_', '_']]
+    game = TicTacToe(board)
+
+
+def show_result():
+    game_frame.pack_forget()
+    result_frame.pack(expand=True, fill=BOTH)
+    terminal = game.isTerminal(board)
+    if terminal == "TIE!":
+        text = f'game over \n {terminal}'
+    else:
+        text = f'game over \n {terminal} won '
+    label = Label(result_frame, text=text, width=30, height=15,
+                  bg=FRAME_COLOR, fg=TEXT_COLOR, font=FONT_RESULT)
+    label.pack()
+
+
 def on_click_multi(i: int, j: int):
     if board[i][j] != "_":
-        pass
-    elif game.player(board) == "X's turn":
+        return
+    if game.player(board) == "X's turn":
         board[i][j] = "X"
         buttons[i][j].config(text=board[i][j])
         color_cell(buttons[i][j], board[i][j])
@@ -76,79 +106,63 @@ def on_click_multi(i: int, j: int):
         color_cell(buttons[i][j], board[i][j])
 
     if game.isTerminal(board):
-        game_frame.pack_forget()
-        result_frame.pack(expand=True, fill=BOTH)
-        if game.isTerminal(board) == "TIE":
-            label = Label(result_frame, text=f'game over \n {game.isTerminal(board)}', width=30, height=15,
-                           bg=FRAME_COLOR, fg=TEXT_COLOR, font=FONT_RESULT)
-            label.pack()
-        else:
-            label = Label(result_frame, text=f'game over \n {game.isTerminal(board)} won ', width=30, height=15,
-                           bg=FRAME_COLOR, fg=TEXT_COLOR, font=FONT_RESULT)
-            label.pack()
+        show_result()
 
 
 def on_click_singl(i: int, j: int):
     if board[i][j] != "_":
         return
+
     if human_char == "X":
-        if game.player(board) == "X's turn":
-            board[i][j] = "X"
-            buttons[i][j].config(text=board[i][j])
-            color_cell(buttons[i][j], board[i][j])
-            if game.isTerminal(board):
-                game_frame.pack_forget()
-                result_frame.pack(expand=True, fill=BOTH)
-                if game.isTerminal(board) == "TIE!":
-                    label = Label(result_frame, text=f'game over \n {game.isTerminal(board)}', width=30, height=15,
-                                   bg=FRAME_COLOR, fg=TEXT_COLOR, font=FONT_RESULT)
-                    label.pack()
-                else:
-                    label = Label(result_frame, text=f'game over \n {game.isTerminal(board)} won ', width=30, height=15,
-                                   bg=FRAME_COLOR, fg=TEXT_COLOR, font=FONT_RESULT)
-                    label.pack()
-            i, j = game.best_move(board, max_player=False)
-            board[i][j] = "O"
-            buttons[i][j].config(text=board[i][j])
-            color_cell(buttons[i][j], board[i][j])
-    else:
-        if game.player(board) == "O's turn":
-            board[i][j] = "O"
-            buttons[i][j].config(text=board[i][j])
-            color_cell(buttons[i][j], board[i][j])
-            i, j = game.best_move(board, max_player=True)
-            board[i][j] = "X"
-            buttons[i][j].config(text=board[i][j])
-            color_cell(buttons[i][j], board[i][j])
+        if game.player(board) != "X's turn":
+            return
+        board[i][j] = "X"
+        buttons[i][j].config(text=board[i][j])
+        color_cell(buttons[i][j], board[i][j])
         if game.isTerminal(board):
-            game_frame.pack_forget()
-            result_frame.pack(expand=True, fill=BOTH)
-            if game.isTerminal(board) == "TIE":
-                label = Label(result_frame, text=f'game over \n {game.isTerminal(board)}', width=30, height=15,
-                               bg=FRAME_COLOR, fg=TEXT_COLOR, font=FONT_RESULT)
-                label.pack()
-            else:
-                label = Label(result_frame, text=f'game over \n {game.isTerminal(board)} won ', width=30, height=15,
-                               bg=FRAME_COLOR, fg=TEXT_COLOR, font=FONT_RESULT)
-                label.pack()
+            show_result()
+            return
+        ai_row, ai_col = game.best_move(board, max_player=False)
+        if ai_row is not None:
+            board[ai_row][ai_col] = "O"
+            buttons[ai_row][ai_col].config(text="O")
+            color_cell(buttons[ai_row][ai_col], "O")
+    else:
+        if game.player(board) != "O's turn":
+            return
+        board[i][j] = "O"
+        buttons[i][j].config(text=board[i][j])
+        color_cell(buttons[i][j], board[i][j])
+        if game.isTerminal(board):
+            show_result()
+            return
+        ai_row, ai_col = game.best_move(board, max_player=True)
+        if ai_row is not None:
+            board[ai_row][ai_col] = "X"
+            buttons[ai_row][ai_col].config(text="X")
+            color_cell(buttons[ai_row][ai_col], "X")
+
+    if game.isTerminal(board):
+        show_result()
 
 
 
 def choose_char():
+    reset_game()
     menu_frame.pack_forget()
     choose_frame.pack(expand=True, fill=BOTH)
     choice_label = Label(choose_frame, text="choose your character", width=20, height=5,
                           bg=FRAME_COLOR, fg=TEXT_COLOR, font=FONT_TITLE)
     choice_label.pack()
-    x_button = ttk.Button(choose_frame, text="X", command=lambda: open_singl(board, "X"),
+    x_button = ttk.Button(choose_frame, text="X", command=lambda: open_singl("X"),
                            width=10, style="Menu.TButton")
     x_button.pack(pady=5)
-    o_button = ttk.Button(choose_frame, text="O", command=lambda: open_singl(board, "O"),
+    o_button = ttk.Button(choose_frame, text="O", command=lambda: open_singl("O"),
                            width=10, style="Menu.TButton")
     o_button.pack(pady=5)
 
 
-def open_singl(matrix, char):
+def open_singl(char):
     global human_char
     human_char = char
     choose_frame.pack_forget()
@@ -160,17 +174,18 @@ def open_singl(matrix, char):
         for j in range(len(board[i])):
             button1 = ttk.Button(game_frame, text=board[i][j], command=lambda i=i, j=j: on_click_singl(i, j),
                                   style="Cell.TButton")
-            button1.grid(row=i, column=j, padx=5, pady=5, sticky="nsew"),
+            button1.grid(row=i, column=j, padx=5, pady=5, sticky="nsew")
             buttons[i].append(button1)
     if char == "O":
-        i, j = game.best_move(board, max_player=True)
-        board[i][j] = "X"
-        buttons[i][j].config(text=board[i][j])
-        color_cell(buttons[i][j], board[i][j])
+        ai_row, ai_col = game.best_move(board, max_player=True)
+        if ai_row is not None:
+            board[ai_row][ai_col] = "X"
+            buttons[ai_row][ai_col].config(text=board[ai_row][ai_col])
+            color_cell(buttons[ai_row][ai_col], board[ai_row][ai_col])
 
 
-
-def open_multi(matrix):
+def open_multi():
+    reset_game()
     menu_frame.pack_forget()
     game_frame.pack(expand=True, fill=BOTH)
     for i in range(len(board)):
@@ -180,153 +195,20 @@ def open_multi(matrix):
         for j in range(len(board[i])):
             button1 = ttk.Button(game_frame, text=board[i][j], command=lambda i=i, j=j: on_click_multi(i, j),
                                   style="Cell.TButton")
-            button1.grid(row=i, column=j, padx=5, pady=5, sticky="nsew"),
+            button1.grid(row=i, column=j, padx=5, pady=5, sticky="nsew")
             buttons[i].append(button1)
 
 
 title_label = Label(menu_frame, text="Tic Tac Toe", font=FONT_TITLE, bg=FRAME_COLOR, fg=TEXT_COLOR)
 title_label.pack(pady=(10, 20))
 
-btn_single = ttk.Button(menu_frame, text="singleplayer", command=lambda: choose_char(),
+btn_single = ttk.Button(menu_frame, text="singleplayer", command=choose_char,
                          width=20, style="Menu.TButton")
 btn_single.pack(pady=8)
 
-btn_multi = ttk.Button(menu_frame, text="multiplayer", command=lambda: open_multi(board),
+btn_multi = ttk.Button(menu_frame, text="multiplayer", command=open_multi,
                         width=20, style="Menu.TButton")
 btn_multi.pack(pady=8)
 
 menu_frame.pack(expand=True, fill=BOTH)
 root.mainloop()
-
-
-
-
-
-
-
-# from tkinter import *
-# from tictactoe import TicTacToe
-#
-# buttons = []
-# board = [['_', '_', '_'],
-#          ['_', '_', '_'],
-#          ['_', '_', '_']
-#          ]
-# game = TicTacToe(board)
-# root = Tk()
-#
-# menu_frame = Frame(root, height=600, width=600, relief=SUNKEN)
-# game_frame = Frame(root, relief=SUNKEN)
-# result_frame = Frame(root, relief='raised', borderwidth=5)
-# choose_frame = Frame(root, relief=SUNKEN, )
-#
-#
-# def on_click_multi(i: int, j: int):
-#     if board[i][j] != "_":
-#         pass
-#     elif game.player(board) == "X's turn":
-#         board[i][j] = "X"
-#         buttons[i][j].config(text=board[i][j])
-#     else:
-#         board[i][j] = "O"
-#         buttons[i][j].config(text=board[i][j])
-#
-#     if game.isTerminal(board):
-#         game_frame.pack_forget()
-#         result_frame.pack()
-#         if game.isTerminal(board) == "TIE":
-#             label = Label(result_frame, text=f'game over \n {game.isTerminal(board)}', width=30, height=15)
-#             label.pack()
-#         else:
-#             label = Label(result_frame, text=f'game over \n {game.isTerminal(board)} won ', width=30, height=15)
-#             label.pack()
-#
-#
-# def on_click_singl(i: int, j: int):
-#     if board[i][j] != "_":
-#         return
-#     if human_char == "X":
-#         if game.player(board) == "X's turn":
-#             board[i][j] = "X"
-#             buttons[i][j].config(text=board[i][j])
-#             if game.isTerminal(board):
-#                 game_frame.pack_forget()
-#                 result_frame.pack()
-#                 if game.isTerminal(board) == "TIE!":
-#                     label = Label(result_frame, text=f'game over \n {game.isTerminal(board)}', width=30, height=15)
-#                     label.pack()
-#                 else:
-#                     label = Label(result_frame, text=f'game over \n {game.isTerminal(board)} won ', width=30, height=15)
-#                     label.pack()
-#             i, j = game.best_move(board, max_player=False)
-#             board[i][j] = "O"
-#             buttons[i][j].config(text=board[i][j])
-#     else:
-#         if game.player(board) == "O's turn":
-#             board[i][j] = "O"
-#             buttons[i][j].config(text=board[i][j])
-#             i, j = game.best_move(board, max_player=True)
-#             board[i][j] = "X"
-#             buttons[i][j].config(text=board[i][j])
-#         if game.isTerminal(board):
-#             game_frame.pack_forget()
-#             result_frame.pack()
-#             if game.isTerminal(board) == "TIE":
-#                 label = Label(result_frame, text=f'game over \n {game.isTerminal(board)}', width=30, height=15)
-#                 label.pack()
-#             else:
-#                 label = Label(result_frame, text=f'game over \n {game.isTerminal(board)} won ', width=30, height=15)
-#                 label.pack()
-#
-#
-#
-# def choose_char():
-#     menu_frame.pack_forget()
-#     choose_frame.pack()
-#     choice_label = Label(choose_frame, text="choose your character", width=20, height=5)
-#     choice_label.pack()
-#     x_button = Button(choose_frame, text="X", command=lambda: open_singl(board, "X"), width=10, height=1)
-#     x_button.pack()
-#     o_button = Button(choose_frame, text="O", command=lambda: open_singl(board, "O"), width=10, height=1)
-#     o_button.pack()
-#
-#
-# def open_singl(matrix, char):
-#     global human_char
-#     human_char = char
-#     choose_frame.pack_forget()
-#     game_frame.pack()
-#     for i in range(len(board)):
-#         buttons.append([])
-#         game_frame.columnconfigure(i, weight=1, minsize=75)
-#         game_frame.rowconfigure(i, weight=1, minsize=50)
-#         for j in range(len(board[i])):
-#             button1 = Button(game_frame, text=board[i][j], command=lambda i=i, j=j: on_click_singl(i, j))
-#             button1.grid(row=i, column=j, padx=5, pady=5),
-#             buttons[i].append(button1)
-#     if char == "O":
-#         i, j = game.best_move(board, max_player=True)
-#         board[i][j] = "X"
-#         buttons[i][j].config(text=board[i][j])
-#
-#
-#
-# def open_multi(matrix):
-#     menu_frame.pack_forget()
-#     game_frame.pack()
-#     for i in range(len(board)):
-#         buttons.append([])
-#         game_frame.columnconfigure(i, weight=1, minsize=75)
-#         game_frame.rowconfigure(i, weight=1, minsize=50)
-#         for j in range(len(board[i])):
-#             button1 = Button(game_frame, text=board[i][j], command=lambda i=i, j=j: on_click_multi(i, j))
-#             button1.grid(row=i, column=j, padx=5, pady=5),
-#             buttons[i].append(button1)
-#
-#
-# btn_single = Button(menu_frame, text="singleplayer", command=lambda: choose_char(), width=20, height=6)
-# btn_single.pack()
-# btn_multi = Button(menu_frame, text="multiplayer", command=lambda: open_multi(board), width=20, height=6)
-# btn_multi.pack()
-# menu_frame.pack()
-# root.mainloop()
