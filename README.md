@@ -32,16 +32,16 @@ pip install -r requirements.txt
 python web_app.py
 ```
 
-Open http://localhost:5000 in your browser.
-
-> On macOS, port 5000 may be taken by AirPlay Receiver. Use `PORT=5001 python web_app.py` instead.
+Open http://localhost:8080 in your browser.
 
 ## Deploy globally (free on Render)
 
-1. Push this repo to GitHub.
-2. Go to [render.com](https://render.com) → **New** → **Blueprint**.
-3. Connect the `UuTTsU/TicTacToe` repo — Render reads `render.yaml` automatically.
-4. Click **Apply**. You get a public URL like `https://tictactoe.onrender.com`.
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/UuTTsU/TicTacToe)
+
+1. Click the button above (or go to [render.com](https://render.com) → **New** → **Blueprint**).
+2. Connect the `UuTTsU/TicTacToe` repo and select the `web-app-deploy` branch.
+3. Click **Apply**. Render reads `render.yaml` and deploys automatically.
+4. You get a public URL like `https://tictactoe.onrender.com`.
 
 ### Alternative: Railway
 
