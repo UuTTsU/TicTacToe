@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            background: #2b2d42;
+            color: #edf2f4;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container { width: min(420px, 92vw); text-align: center; }
+        h1 { font-size: 2rem; margin-bottom: 1.5rem; }
+        .screen { display: none; }
+        .screen.active { display: block; }
+        .btn {
+            display: block; width: 100%; max-width: 280px; margin: 0.5rem auto;
+            padding: 0.75rem 1rem; font-size: 1rem; font-weight: bold;
+            border: none; border-radius: 6px; cursor: pointer;
+            background: #8d99ae; color: #edf2f4; transition: background 0.15s;
+        }
+        .btn:hover { background: #edf2f4; color: #2b2d42; }
+        .board {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 8px; margin: 1.5rem auto; max-width: 360px;
+        }
+        .cell {
+            aspect-ratio: 1; font-size: 2.5rem; font-weight: bold;
+            border: none; border-radius: 6px; cursor: pointer;
+            background: #8d99ae; color: #edf2f4; transition: background 0.15s;
+        }
+        .cell:hover:not(:disabled) { background: #edf2f4; }
+        .cell:disabled { cursor: default; }
+        .cell.x { color: #ef233c; }
+        .cell.o { color: #2196f3; }
+        .status { font-size: 1.1rem; margin-bottom: 0.5rem; min-height: 1.5rem; }
+        .result { font-size: 1.4rem; font-weight: bold; margin: 1rem 0; min-height: 2rem; }
+        .char-choice { display: flex; gap: 1rem; justify-content: center; }
+        .char-choice .btn { max-width: 120px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tic Tac Toe</h1>
+        <div id="menu" class="screen active">
+            <button class="btn" onclick="showCharChoice()">Singleplayer</button>
+            <button class="btn" onclick="startGame('multi')">Multiplayer</button>
+        </div>
+        <div id="char-choice" class="screen">
+            <p class="status">Choose your character</p>
+            <div class="char-choice">
+                <button class="btn" onclick="startGame('single', 'X')">X</button>
+                <button class="btn" onclick="startGame('single', 'O')">O</button>
+            </div>
+            <button class="btn" onclick="showMenu()" style="margin-top:1.5rem">Back</button>
+        </div>
+        <div id="game" class="screen">
+            <p id="status" class="status"></p>
+            <div id="board" class="board"></div>
+            <p id="result" class="result"></p>
+            <button class="btn" onclick="showMenu()">Back to Menu</button>
+        </div>
+    </div>
+
+    <script>
+        const EMPTY = '_';
+
+        function emptyBoard() {
+            return Array.from({ length: 3 }, () => Array(3).fill(EMPTY));
+        }
+
+        function cloneBoard(board) {
+            return board.map(row => [...row]);
+        }
+
+        function isTerminal(board) {
+            const lDiag = [board[0][0], board[1][1], board[2][2]];
+            const rDiag = [board[0][2], board[1][1], board[2][0]];
+
+            if (new Set(lDiag).size === 1 && lDiag[0] !== EMPTY) return lDiag[0];
+            if (new Set(rDiag).size === 1 && rDiag[0] !== EMPTY) return rDiag[0];
+
+            for (let i = 0; i < 3; i++) {
+                const row = board[i];
+                const col = [board[0][i], board[1][i], board[2][i]];
+                if (new Set(row).size === 1 && row[0] !== EMPTY) return row[0];
+                if (new Set(col).size === 1 && col[0] !== EMPTY) return col[0];
+            }
+
+            const flat = board.flat();
+            if (!flat.includes(EMPTY)) return 'TIE!';
+            return false;
+        }
+
+        function player(board) {
+            if (isTerminal(board)) return 'game is over';
+            const counts = { X: 0, O: 0 };
+            board.flat().forEach(c => { if (c !== EMPTY) counts[c]++; });
+            return counts.X > counts.O || counts.O === 0 ? "O's turn" : "X's turn";
+        }
+
+        function actions(board) {
+            const moves = [];
+            for (let i = 0; i < 3; i++)
+                for (let j = 0; j < 3; j++)
+                    if (board[i][j] === EMPTY) moves.push([i, j]);
+            return moves;
+        }
+
+        function result(board, move) {
+            const next = cloneBoard(board);
+            const [i, j] = move;
+            const turn = player(board);
+            if (turn === "X's turn") next[i][j] = 'X';
+            else if (turn === "O's turn") next[i][j] = 'O';
+            return next;
+        }
+
+        function utility(board) {
+            const t = isTerminal(board);
+            if (t === 'X') return 1;
+            if (t === 'O') return -1;
+            return 0;
+        }
+
+        function minimax(board, maxPlayer) {
+            if (isTerminal(board)) return utility(board);
+            if (maxPlayer) {
+                let value = -Infinity;
+                for (const move of actions(board))
+                    value = Math.max(value, minimax(result(board, move), false));
+                return value;
+            }
+            let value = Infinity;
+            for (const move of actions(board))
+                value = Math.min(value, minimax(result(board, move), true));
+            return value;
+        }
+
+        function bestMove(board, maxPlayer) {
+            if (isTerminal(board)) return null;
+            let best = [0, 0];
+            if (maxPlayer) {
+                let bestScore = -Infinity;
+                for (const [i, j] of actions(board)) {
+                    const score = minimax(result(board, [i, j]), false);
+                    if (score > bestScore) { bestScore = score; best = [i, j]; }
+                }
+            } else {
+                let bestScore = Infinity;
+                for (const [i, j] of actions(board)) {
+                    const score = minimax(result(board, [i, j]), true);
+                    if (score < bestScore) { bestScore = score; best = [i, j]; }
+                }
+            }
+            return best;
+        }
+
+        function terminalResult(board) {
+            const t = isTerminal(board);
+            if (!t) return null;
+            if (t === 'TIE!') return { status: 'tie', message: 'TIE!' };
+            return { status: 'win', message: `${t} won` };
+        }
+
+        let state = { board: emptyBoard(), mode: 'menu', human_char: 'X', turn: null, result: null };
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function showMenu() { showScreen('menu'); }
+        function showCharChoice() { showScreen('char-choice'); }
+
+        function renderBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            state.board.forEach((row, i) => {
+                row.forEach((cell, j) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'cell';
+                    if (cell === 'X') btn.classList.add('x');
+                    if (cell === 'O') btn.classList.add('o');
+                    btn.textContent = cell === EMPTY ? '' : cell;
+                    btn.disabled = cell !== EMPTY || !!state.result;
+                    btn.onclick = () => makeMove(i, j);
+                    boardEl.appendChild(btn);
+                });
+            });
+
+            const statusEl = document.getElementById('status');
+            const resultEl = document.getElementById('result');
+            if (state.result) {
+                statusEl.textContent = 'Game over';
+                resultEl.textContent = state.result.message;
+            } else if (state.mode === 'single') {
+                statusEl.textContent = `You are ${state.human_char} — ${state.turn || ''}`;
+                resultEl.textContent = '';
+            } else {
+                statusEl.textContent = state.turn || '';
+                resultEl.textContent = '';
+            }
+        }
+
+        function aiMove(board, humanChar) {
+            if (humanChar === 'X') {
+                const move = bestMove(board, false);
+                if (move) board[move[0]][move[1]] = 'O';
+            } else {
+                const move = bestMove(board, true);
+                if (move) board[move[0]][move[1]] = 'X';
+            }
+        }
+
+        function startGame(mode, humanChar) {
+            const board = emptyBoard();
+            const hc = humanChar || 'X';
+            if (mode === 'single' && hc === 'O') aiMove(board, hc);
+            state = {
+                board,
+                mode,
+                human_char: hc,
+                turn: player(board),
+                result: terminalResult(board),
+            };
+            showScreen('game');
+            renderBoard();
+        }
+
+        function makeMove(row, col) {
+            if (state.result || state.board[row][col] !== EMPTY) return;
+
+            if (state.mode === 'single') {
+                if (player(state.board) !== `${state.human_char}'s turn`) return;
+                state.board[row][col] = state.human_char;
+                if (!isTerminal(state.board)) aiMove(state.board, state.human_char);
+            } else {
+                const piece = player(state.board) === "X's turn" ? 'X' : 'O';
+                state.board[row][col] = piece;
+            }
+
+            state.turn = player(state.board);
+            state.result = terminalResult(state.board);
+            renderBoard();
+        }
+    </script>
+</body>
+</html>

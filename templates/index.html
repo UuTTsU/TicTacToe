@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            background: #2b2d42;
+            color: #edf2f4;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            width: min(420px, 92vw);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        .btn {
+            display: block;
+            width: 100%;
+            max-width: 280px;
+            margin: 0.5rem auto;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #8d99ae;
+            color: #edf2f4;
+            transition: background 0.15s;
+        }
+
+        .btn:hover { background: #edf2f4; color: #2b2d42; }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin: 1.5rem auto;
+            max-width: 360px;
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            font-size: 2.5rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #8d99ae;
+            color: #edf2f4;
+            transition: background 0.15s;
+        }
+
+        .cell:hover:not(:disabled) { background: #edf2f4; }
+        .cell:disabled { cursor: default; }
+        .cell.x { color: #ef233c; }
+        .cell.o { color: #2196f3; }
+
+        .status {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            min-height: 1.5rem;
+        }
+
+        .result {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin: 1rem 0;
+            min-height: 2rem;
+        }
+
+        .char-choice { display: flex; gap: 1rem; justify-content: center; }
+        .char-choice .btn { max-width: 120px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tic Tac Toe</h1>
+
+        <div id="menu" class="screen active">
+            <button class="btn" onclick="showCharChoice()">Singleplayer</button>
+            <button class="btn" onclick="startGame('multi')">Multiplayer</button>
+        </div>
+
+        <div id="char-choice" class="screen">
+            <p class="status">Choose your character</p>
+            <div class="char-choice">
+                <button class="btn" onclick="startGame('single', 'X')">X</button>
+                <button class="btn" onclick="startGame('single', 'O')">O</button>
+            </div>
+            <button class="btn" onclick="showMenu()" style="margin-top:1.5rem">Back</button>
+        </div>
+
+        <div id="game" class="screen">
+            <p id="status" class="status"></p>
+            <div id="board" class="board"></div>
+            <p id="result" class="result"></p>
+            <button class="btn" onclick="showMenu()">Back to Menu</button>
+        </div>
+    </div>
+
+    <script>
+        let state = { board: [], mode: 'menu', human_char: 'X', turn: null, result: null };
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function showMenu() {
+            showScreen('menu');
+        }
+
+        function showCharChoice() {
+            showScreen('char-choice');
+        }
+
+        function renderBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            state.board.forEach((row, i) => {
+                row.forEach((cell, j) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'cell';
+                    if (cell === 'X') btn.classList.add('x');
+                    if (cell === 'O') btn.classList.add('o');
+                    btn.textContent = cell === '_' ? '' : cell;
+                    btn.disabled = cell !== '_' || !!state.result;
+                    btn.onclick = () => makeMove(i, j);
+                    boardEl.appendChild(btn);
+                });
+            });
+
+            const statusEl = document.getElementById('status');
+            const resultEl = document.getElementById('result');
+
+            if (state.result) {
+                statusEl.textContent = 'Game over';
+                resultEl.textContent = state.result.message;
+            } else if (state.mode === 'single') {
+                statusEl.textContent = `You are ${state.human_char} — ${state.turn || ''}`;
+                resultEl.textContent = '';
+            } else {
+                statusEl.textContent = state.turn || '';
+                resultEl.textContent = '';
+            }
+        }
+
+        async function startGame(mode, humanChar) {
+            const body = { mode };
+            if (mode === 'single') body.human_char = humanChar;
+
+            const res = await fetch('/api/new', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            state = await res.json();
+            showScreen('game');
+            renderBoard();
+        }
+
+        async function makeMove(row, col) {
+            const res = await fetch('/api/move', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ row, col }),
+            });
+            if (!res.ok) return;
+            state = await res.json();
+            renderBoard();
+        }
+    </script>
+</body>
+</html>
