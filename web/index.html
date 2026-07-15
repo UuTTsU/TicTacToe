@@ -102,7 +102,9 @@
             if (isTerminal(board)) return 'game is over';
             const counts = { X: 0, O: 0 };
             board.flat().forEach(c => { if (c !== EMPTY) counts[c]++; });
-            return counts.X > counts.O || counts.O === 0 ? "O's turn" : "X's turn";
+            const pieceTypes = (counts.X > 0 ? 1 : 0) + (counts.O > 0 ? 1 : 0);
+            if (counts.X > counts.O || pieceTypes === 1) return "O's turn";
+            return "X's turn";
         }
 
         function actions(board) {
